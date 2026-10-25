@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1f3a" />
+  <meta name="description" content="AI Banking Agent · iCAN 大赛演示 · HTML 网页版" />
+  <title>AI Banking Agent · 小银</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b1f3a'/%3E%3Ctext x='32' y='45' font-size='36' font-family='sans-serif' font-weight='700' text-anchor='middle' fill='%23d4af37'%3E银%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="offline-banner" id="offlineBanner" hidden>
+    ⚠️ 无法连接模拟银行核心。请确认 FastAPI 已在 <code>8000</code> 端口启动。
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-mark">银</div>
+        <div>
+          <div class="brand-name">小银 · Web 版</div>
+          <div class="brand-en">AI BANKING AGENT / iCAN</div>
+        </div>
+      </div>
+
+      <div class="core-card" id="coreCard">
+        <span class="status-dot loading" id="coreDot"></span>
+        <div>
+          <div class="core-title" id="coreTitle">正在连接核心系统</div>
+          <div class="core-sub" id="coreSub">检查 /api/health …</div>
+        </div>
+      </div>
+
+      <div class="side-section-label">智能体引擎</div>
+      <div class="engine-card">
+        <span class="engine-icon" id="engineIcon">⚡</span>
+        <div>
+          <div class="engine-title" id="engineTitle">本地演示模式</div>
+          <div class="engine-sub" id="engineSub">未配置 DeepSeek Key；全部业务流程仍可演示。</div>
+        </div>
+      </div>
+
+      <div class="side-section-label">一键演示剧本</div>
+      <div class="quick-actions" id="quickActions">
+        <button type="button" class="quick-btn" data-prompt="给张三转500块交房租">
+          <span>💸</span>给张三转 500 元交房租
+        </button>
+        <button type="button" class="quick-btn" data-prompt="帮我分析一下本月账单，并找出周期扣费">
+          <span>📊</span>分析本月账单
+        </button>
+        <button type="button" class="quick-btn" data-prompt="我的卡丢了，帮我挂失">
+          <span>💳</span>我的卡丢了
+        </button>
+        <button type="button" class="quick-btn" data-prompt="帮我把信用卡提额到2万">
+          <span>⬆️</span>信用卡提额到 2 万
+        </button>
+        <button type="button" class="quick-btn" data-prompt="帮我申购5万元的稳盈90天">
+          <span>📈</span>申购 5 万稳盈 90 天
+        </button>
+        <button type="button" class="quick-btn accent" id="birthdaySimulateBtn">
+          <span>🎂</span><span id="birthdaySimulateLabel">模拟生日自动执行</span>
+        </button>
+      </div>
+
+      <div class="side-section-label">会话与演示数据</div>
+      <div class="side-actions">
+        <button type="button" class="ghost-btn" id="clearChatBtn">清空对话</button>
+        <button type="button" class="ghost-btn danger" id="resetDataBtn">重置账户</button>
+      </div>
+
+      <div class="sidebar-links">
+        <a href="/docs" target="_blank" rel="noreferrer">API 文档 ↗</a>
+        <a href="http://localhost:8501" target="_blank" rel="noreferrer" id="streamlitLink">Streamlit 备用版 ↗</a>
+      </div>
+
+      <div class="sidebar-foot">
+        <div>🔒 转账、挂失、提额、理财均需二次确认</div>
+        <div>本页面仅用于比赛演示，不处理真实资金。</div>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div class="topbar-title">
+          <div class="eyebrow">INTELLIGENT RETAIL BANKING</div>
+          <h1>AI Banking Agent <span>·</span> 小银</h1>
+          <p>资产洞察 × 智能办理 × 跨场景主动服务</p>
+        </div>
+        <div class="topbar-meta">
+          <span class="pill" id="coreChip"><i class="pill-dot"></i>核心系统</span>
+          <span class="pill engine" id="engineChip">LOCAL DEMO ENGINE</span>
+          <span class="clock" id="clock">--:--</span>
+        </div>
+      </header>
+
+      <div class="layout">
+        <section class="panel chat-panel" aria-label="AI 银行管家对话">
+          <header class="panel-head">
+            <div>
+              <h2>💬 与 AI 管家对话</h2>
+              <p>用自然语言办理银行业务，敏感操作会先请求确认</p>
+            </div>
+            <button type="button" class="icon-btn" id="clearChatIcon" title="清空对话" aria-label="清空对话">↺</button>
+          </header>
+
+          <div class="chat-scroll" id="chatScroll" aria-live="polite">
+            <div class="messages" id="messages"></div>
+          </div>
+
+          <div class="pending-host" id="pendingHost"></div>
+
+          <form class="composer" id="chatForm" autocomplete="off">
+            <textarea
+              id="messageInput"
+              rows="1"
+              maxlength="2000"
+              placeholder="试试：给张三转500块交房租 / 我的卡丢了 / 分析本月账单…"
+              aria-label="输入消息"
+            ></textarea>
+            <button type="submit" class="send-btn" id="sendButton">
+              <span id="sendLabel">发送</span>
+              <span class="send-arrow">➤</span>
+            </button>
+          </form>
+          <div class="composer-note">
+            <span>🔒 Human-in-the-loop · 确认单 10 分钟有效</span>
+            <span>Enter 发送 / Shift + Enter 换行</span>
+          </div>
+        </section>
+
+        <aside class="dashboard" id="dashboard" aria-label="资产面板">
+          <div class="dashboard-skeleton" id="dashboardSkeleton">
+            <div class="skeleton wide"></div>
+            <div class="skeleton hero"></div>
+            <div class="skeleton-row">
+              <div class="skeleton"></div>
+              <div class="skeleton"></div>
+              <div class="skeleton"></div>
+            </div>
+            <div class="skeleton tall"></div>
+          </div>
+          <div id="dashboardContent" hidden></div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
